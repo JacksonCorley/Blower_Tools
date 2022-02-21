@@ -36,6 +36,7 @@ Cv = 0.1714 #potential User input. could be calculated from graph and pressure b
 
 
 ## constants
+units_lst = ["SI", "US"]
 R_i = 1545.33
 M = 28.967
 R = R_i/M
@@ -47,7 +48,7 @@ pipe_vel = {3:{"low":1200, "high":1800},10:{"low":1800, "high":3000}, 24:{"low":
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SLATE])
 server = app.server
 
-Amb_Card = dbc.Card(
+Amb_Inl_Card = dbc.Card(
             dbc.CardBody(
                 [
                     html.H5("Ambient Conditions", className="card-title"),
@@ -58,72 +59,78 @@ Amb_Card = dbc.Card(
                     html.P("Temperature (°F)",
                         className="card-text",
                     ),
-                    dcc.Input(id="ambient-temp", type="number", value=100, step=0.1)
-                ]
-            )
-        )
-
-Press_Card = dbc.Card(
-            dbc.CardBody(
-                [
-                    html.H5("Pressure Conditions", className="card-title"),
+                    dcc.Input(id="ambient-temp", type="number", value=100, step=0.1),
+                    html.H5("", className="card-title"),
+                    html.H5("Inlet Conditions", className="card-title"),
                     html.P("Inlet Fluid Pressure (psi)",
                         className="card-text",
                     ),
                     dcc.Input(id="inlet-pressure", type="number", value=14.5, step=0.01),
-                    html.P("Outlet Fluid Pressure (psi)",
+                    html.P("Pipe Diameter (inches)",
                         className="card-text",
                     ),
-                    dcc.Input(id="outlet-pressure", type="number", value=34.5, step=0.01)
+                    dcc.Input(id="in-diameter", type="number", value=60, step=1, min=1, max=60),
+                    html.P("VOLUME FLOW (SCFM)",
+                        className="card-text",
+                    ),
+                    dcc.Input(id="Q-Vol", type="number", value = 0),
+                    html.P("MASS FLOW (lb/min)",
+                        className="card-text",
+                    ),
+                    dcc.Input(id="Q-MASS", type="number", value = 0),
+                    html.P("VOLUME FLOW (ACFM)",
+                        className="card-text",
+                    ),
+                    dcc.Input(id="inl-Q-A-Vol", type="number", value = 0)
                 ]
             )
         )
 
-Sys_Card = dbc.Card(
+Out_Card = dbc.Card(
             dbc.CardBody(
                 [
-                    html.H5("System Conditions", className="card-title"),
+                    html.H5("Outlet Conditions", className="card-title"),
+                    html.P("Outlet Fluid Pressure (psi)",
+                        className="card-text",
+                    ),
+                    dcc.Input(id="outlet-pressure", type="number", value=34.5, step=0.01),
                     html.P("Pipe Diameter (inches)",
                         className="card-text",
                     ),
-                    dcc.Input(id="diameter", type="number", value=60, step=1, min=1, max=60),
+                    dcc.Input(id="out-diameter", type="number", value=60, step=1, min=1, max=60),
                     html.P("Efficiency (%)",
                         className="card-text",
                     ),
-                    dcc.Input(id="efficiency", type="number", value=60, step=1, min=60, max=100)
+                    dcc.Input(id="efficiency", type="number", value=60, step=1, min=60, max=100),
+                    html.P(" VOLUME FLOW (ACFM)",
+                        className="card-text",
+                    ),
+                    dcc.Input(id="out-Q-A-Vol", type="number", value = 0)
                 ]
             )
         )
-Inl_Conv_Card = dbc.Card(
-            dbc.CardBody(
-                [
-                    html.H5("Inlet Flow Conversion", className="card-title"),
-                    html.P("FLOW (SCFM)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="inl-Q-SCFM", type="number", value = 0),
-                    html.P("FLOW (ACFM)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="inl-Q-ACFM", type="number", value = 0)
-                ]
-            )
-        )
-Out_Conv_Card = dbc.Card(
-            dbc.CardBody(
-                [
-                    html.H5("Outlet Flow Conversion", className="card-title"),
-                    html.P("FLOW (SCFM)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="out-Q-SCFM", type="number", value = 0),
-                    html.P("FLOW (ACFM)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="out-Q-ACFM", type="number", value = 0)
-                ]
-            )
-        )
+
+image_Card = dbc.Card(
+    [
+        dbc.CardBody(
+            [
+                html.P(
+                    "Choose the units from the dropdown",
+                    className="card-text",
+                ),
+                dcc.Dropdown(id='units', options=[{'label': unit, "value": unit} for unit in units_lst],
+                             value="US", clearable=False, style={"color": "#000000"}),
+            ]
+        ),
+        dbc.CardImg(src = "/assets/maxresdefault.jpg", top=True, bottom=False,
+                    title="Blower Diagram"),
+    ],
+    color="dark",   # https://bootswatch.com/default/ for more card colors
+    inverse=True,   # change color of text (black or white)
+    outline=False,  # True = remove the block colors from the background and header
+)
+
+
 
 inl_graph_Card = dbc.Card(
             dbc.CardBody(
@@ -151,7 +158,9 @@ out_graph_Card = dbc.Card(
 
 cards = html.Div([
      dbc.Row([
-         dbc.CardGroup([Amb_Card,Press_Card,Sys_Card,Inl_Conv_Card,Out_Conv_Card])
+         dbc.Col(Amb_Inl_Card, width = 2),
+         dbc.Col(image_Card, width = 8),
+         dbc.Col(Out_Card, width = 2),
          ]),
      dbc.Row([
          dbc.Col(inl_graph_Card, width = 6),
@@ -168,7 +177,7 @@ app.layout = html.Div(cards)
 def calc_acfm(scfm,dnsty):
     lbmin = 0.0751294*scfm
     acfm = lbmin/dnsty
-    return acfm
+    return acfm, lbmin
 
 def calc_scfm(acfm,dnsty):
     lbmin = acfm*dnsty
@@ -242,62 +251,61 @@ def generate_plot(dia, dnsty):
 
 
 @app.callback(
-    Output(component_id='inl-Q-SCFM', component_property='value'),
-    Output(component_id='inl-Q-ACFM', component_property='value'),
-    [Input(component_id='inl-Q-SCFM', component_property='value'),
-     Input(component_id='inl-Q-ACFM', component_property='value'),
+    [Output(component_id='inl-Q-A-Vol', component_property='value'),
+    Output(component_id='Q-MASS', component_property='value')],
+    [Input(component_id='Q-Vol', component_property='value'),
      Input(component_id='ambient-temp', component_property='value'),
      Input(component_id='inlet-pressure', component_property='value'),
      Input(component_id='ambient-pressure', component_property='value'),],
     prevent_initial_call=False
 )
-def inl_ACFM_SCFM(SCFM, ACFM, amb_temp, inl_p, amb_p):
-    ctx = dash.callback_context
-    trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+def inl_ACFM_SCFM(SCFM, amb_temp, inl_p, amb_p):
+    ##ctx = dash.callback_context
+    ##trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
     inl_temp = ((amb_temp + 460)*(inl_p/amb_p)**n)-460
     inl_fld_dnsty = (144/R)*(inl_p/(inl_temp+460))
-    if trigger_id == "inl-Q-ACFM":
-        SCFM_val = round(calc_scfm(ACFM,inl_fld_dnsty))
-        ACFM_val = ACFM
-    else:
-        ACFM_val = round(calc_acfm(SCFM,inl_fld_dnsty))
-        SCFM_val = SCFM
-    print(round(calc_scfm(ACFM,inl_fld_dnsty),2))
-    return SCFM_val, ACFM_val
+    ##if trigger_id == "inl-Q-ACFM":
+    ##    SCFM_val = round(calc_scfm(ACFM,inl_fld_dnsty))
+    ##    ACFM_val = ACFM
+    ##else:
+    ##    ACFM_val = round(calc_acfm(SCFM,inl_fld_dnsty))
+    ##    SCFM_val = SCFM
+    ##print(round(calc_scfm(ACFM,inl_fld_dnsty),2))
+    acfm, mass_q = calc_acfm(SCFM,inl_fld_dnsty)
+    return round(acfm), round(mass_q)
 
 
 @app.callback(
-    Output(component_id='out-Q-SCFM', component_property='value'),
-    Output(component_id='out-Q-ACFM', component_property='value'),
-    [Input(component_id='out-Q-SCFM', component_property='value'),
-     Input(component_id='out-Q-ACFM', component_property='value'),
+    Output(component_id='out-Q-A-Vol', component_property='value'),
+    [Input(component_id='Q-Vol', component_property='value'),
      Input(component_id='ambient-temp', component_property='value'),
      Input(component_id='inlet-pressure', component_property='value'),
      Input(component_id='outlet-pressure', component_property='value'),
      Input(component_id='efficiency', component_property='value'),
-     Input(component_id='ambient-pressure', component_property='value'),],
+     Input(component_id='ambient-pressure', component_property='value')],
     prevent_initial_call=False
 )
-def out_ACFM_SCFM(SCFM, ACFM, amb_temp, inl_p, out_p, effcncy, amb_p):
-    ctx = dash.callback_context
-    trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+def out_ACFM_SCFM(SCFM, amb_temp, inl_p, out_p, effcncy, amb_p):
+    ##ctx = dash.callback_context
+    ##trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
     inl_temp = ((amb_temp + 460)*(inl_p/amb_p)**n)-460
-    fluid_temp = (inl_temp+460)*((1/effcncy/100)*(out_p/inl_p)**n-1/effcncy/100+1)-460
+    fluid_temp = (inl_temp+460)*((1/effcncy)*(out_p/inl_p)**n-1/effcncy+1)-460
     outlt_fld_dnsty = (144/R)*(out_p/(fluid_temp+460))
-    if trigger_id == "out-Q-ACFM":
-        SCFM_val = round(calc_scfm(ACFM,outlt_fld_dnsty))
-        ACFM_val = ACFM
-    else:
-        ACFM_val = round(calc_acfm(SCFM,outlt_fld_dnsty))
-        SCFM_val = SCFM
-    print(round(calc_scfm(ACFM,outlt_fld_dnsty),2))
-    return SCFM_val, ACFM_val
+    ##if trigger_id == "out-Q-ACFM":
+    ##    SCFM_val = round(calc_scfm(ACFM,outlt_fld_dnsty))
+    ##    ACFM_val = ACFM
+    ##else:
+    ##    ACFM_val = round(calc_acfm(SCFM,outlt_fld_dnsty))
+    ##    SCFM_val = SCFM
+    ##print(round(calc_scfm(ACFM,outlt_fld_dnsty),2))
+    acfm, mass_q = calc_acfm(SCFM,outlt_fld_dnsty)
+    return round(acfm)
 
 @app.callback(Output(component_id='inl-my-vel_graph', component_property='figure'),
                [Input(component_id='ambient-temp', component_property='value'),
                 Input(component_id='inlet-pressure', component_property='value'),
                 Input(component_id='ambient-pressure', component_property='value'),
-                Input(component_id='diameter', component_property='value'),],
+                Input(component_id='in-diameter', component_property='value'),],
                prevent_initial_call=False)
 def gen_inl_graph(amb_temp, inl_p, amb_p, dia):
     inl_temp = ((amb_temp + 460)*(inl_p/amb_p)**n)-460
@@ -313,7 +321,7 @@ def gen_inl_graph(amb_temp, inl_p, amb_p, dia):
                 Input(component_id='outlet-pressure', component_property='value'),
                 Input(component_id='efficiency', component_property='value'),
                 Input(component_id='ambient-pressure', component_property='value'),
-                Input(component_id='diameter', component_property='value'),],
+                Input(component_id='out-diameter', component_property='value'),],
                prevent_initial_call=False)
 def gen_out_graph(amb_temp, inl_p, out_p, effcncy, amb_p, dia):
     inl_temp = ((amb_temp + 460)*(inl_p/amb_p)**n)-460
