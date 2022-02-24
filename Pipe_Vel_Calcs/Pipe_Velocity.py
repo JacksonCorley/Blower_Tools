@@ -39,6 +39,8 @@ Cv = 0.1714 #potential User input. could be calculated from graph and pressure b
 units_lst = ["SI", "US"]
 R_i = 1545.33
 M = 28.967
+R_s = 8949.4596
+g = 32.17405
 R = R_i/M
 K = Cp/Cv
 n = (K-1)/K
@@ -49,63 +51,117 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SLATE])
 server = app.server
 
 Amb_Inl_Card = dbc.Card(
-            dbc.CardBody(
-                [
-                    html.H5("Ambient Conditions", className="card-title"),
-                    html.P("Pressure (psi)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="ambient-pressure", type="number", value=14.7, step=0.01),
-                    html.P("Temperature (°F)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="ambient-temp", type="number", value=100, step=0.1),
-                    html.H5("", className="card-title"),
-                    html.H5("Inlet Conditions", className="card-title"),
-                    html.P("Inlet Fluid Pressure (psi)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="inlet-pressure", type="number", value=14.5, step=0.01),
-                    html.P("Pipe Diameter (inches)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="in-diameter", type="number", value=60, step=1, min=1, max=60),
-                    html.P("VOLUME FLOW (SCFM)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="Q-Vol", type="number", value = 0),
-                    html.P("MASS FLOW (lb/min)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="Q-MASS", type="number", value = 0),
-                    html.P("VOLUME FLOW (ACFM)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="inl-Q-A-Vol", type="number", value = 0)
-                ]
-            )
+    dbc.CardBody(
+        [
+            dbc.Row([
+                dbc.Col([html.H5("Ambient Conditions", className="card-title")]),
+                ]),
+            dbc.Row([
+                dbc.Col([html.P("Pressure",className="card-text")]),
+                ]),
+            dbc.Row([
+                dbc.Col([dcc.Input(id="ambient-pressure", type="number", value=14.7, step=0.01)]),
+                dbc.Col([dcc.Dropdown(id='ambient-pressure-units', options=[{'label': unit, "value": unit} for unit in ["psi","kPa"]],
+                                      value="psi", clearable=False, style={"color": "#000000"})])
+                ]),
+            dbc.Row([
+                dbc.Col([dcc.Input(id="ambient-pressure-EL", type="number", value=0, step=1)]),
+                dbc.Col([dcc.Dropdown(id='ambient-pressure-EL-units', options=[{'label': unit, "value": unit} for unit in ["ft","m"]],
+                                      value="ft", clearable=False, style={"color": "#000000"})])
+                ]), 
+            dbc.Row([
+                dbc.Col([html.P("Temperature",className="card-text")])
+                ]),
+            dbc.Row([
+                dbc.Col([dcc.Input(id="ambient-temp", type="number", value=100, step=0.1)]),
+                dbc.Col([dcc.Dropdown(id='ambient-temp-units', options=[{'label': unit, "value": unit} for unit in ["°F","°C"]],
+                                      value="°F", clearable=False, style={"color": "#000000"})])
+                ]),
+            dbc.Row([
+                dbc.Col([html.H5("Inlet Conditions", className="card-title")])
+                ]),
+            dbc.Row([
+                dbc.Col([html.P("Inlet Fluid Pressure",className="card-text")])
+                ]),
+            dbc.Row([
+                dbc.Col([dcc.Input(id="inlet-pressure", type="number", value=14.5, step=0.01)]),
+                dbc.Col([dcc.Dropdown(id='inlet-pressure-units', options=[{'label': unit, "value": unit} for unit in ["psi","kPa"]],
+                                      value="psi", clearable=False, style={"color": "#000000"})]),
+                ]),
+            dbc.Row([
+                dbc.Col([html.P("Pipe Diameter",className="card-text")])
+                ]),
+            dbc.Row([
+                dbc.Col([dcc.Input(id="in-diameter", type="number", value=60, step=1, min=1, max=60)]),
+                dbc.Col([dcc.Dropdown(id='in-diameter-units', options=[{'label': unit, "value": unit} for unit in ["in","mm"]],
+                                      value="in", clearable=False, style={"color": "#000000"})]),
+                ]),
+            dbc.Row([
+                dbc.Col([html.P("Standard Volume Flow",className="card-text")])
+                ]),
+            dbc.Row([
+                dbc.Col([dcc.Input(id="Q-Vol", type="number", value = 0)]),
+                dbc.Col([dcc.Dropdown(id='Q-Vol-units', options=[{'label': unit, "value": unit} for unit in ["SCFM","KSCM/h"]],
+                              value="SCFM", clearable=False, style={"color": "#000000"})]),
+                ]),
+            dbc.Row([
+                dbc.Col([html.P("Mass Flow",className="card-text")])
+                ]),
+            dbc.Row([
+                dbc.Col([dcc.Input(id="Q-MASS", type="number", value = 0)]),
+                dbc.Col([dcc.Dropdown(id='Q-MASS-units', options=[{'label': unit, "value": unit} for unit in ["lb/m","kg/m"]],
+                                      value="lb/m", clearable=False, style={"color": "#000000"})]),
+                ]),
+            dbc.Row([
+                dbc.Col([html.P("Actual Volume Flow",className="card-text")])
+                ]),
+            dbc.Row([
+                dbc.Col([dcc.Input(id="inl-Q-A-Vol", type="number", value = 0)]),
+                dbc.Col([dcc.Dropdown(id='inl-Q-A-Vol-units', options=[{'label': unit, "value": unit} for unit in ["ACFM","ACM/h"]],
+                              value="ACFM", clearable=False, style={"color": "#000000"})]),
+                ]),
+            ]
         )
+    )
+    
 
 Out_Card = dbc.Card(
             dbc.CardBody(
                 [
-                    html.H5("Outlet Conditions", className="card-title"),
-                    html.P("Outlet Fluid Pressure (psi)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="outlet-pressure", type="number", value=34.5, step=0.01),
-                    html.P("Pipe Diameter (inches)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="out-diameter", type="number", value=60, step=1, min=1, max=60),
-                    html.P("Efficiency (%)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="efficiency", type="number", value=60, step=1, min=60, max=100),
-                    html.P(" VOLUME FLOW (ACFM)",
-                        className="card-text",
-                    ),
-                    dcc.Input(id="out-Q-A-Vol", type="number", value = 0)
+                    dbc.Row([
+                        dbc.Col([html.H5("Outlet Conditions", className="card-title")]),
+                        ]),
+                    dbc.Row([
+                        dbc.Col([html.P("Outlet Fluid Pressure",className="card-text")]),
+                        ]),
+                    dbc.Row([
+                        dbc.Col([dcc.Input(id="outlet-pressure", type="number", value=34.5, step=0.01)]),
+                        dbc.Col([dcc.Dropdown(id='outlet-pressure-units', options=[{'label': unit, "value": unit} for unit in ["psi","kPa"]],
+                                              value="psi", clearable=False, style={"color": "#000000"})])
+                        ]),
+                    dbc.Row([
+                        dbc.Col([html.P("Pipe Diameter",className="card-text")]),
+                        ]),
+                    dbc.Row([
+                        dbc.Col([dcc.Input(id="out-diameter", type="number", value=60, step=1, min=1, max=60)]),
+                        dbc.Col([dcc.Dropdown(id='out-diameter-units', options=[{'label': unit, "value": unit} for unit in ["in","mm"]],
+                                              value="in", clearable=False, style={"color": "#000000"})]),
+                        ]),
+                    dbc.Row([
+                        dbc.Col([html.P("Efficiency (%)",className="card-text")]),
+                        ]),
+                    dbc.Row([
+                        dbc.Col([dcc.Input(id="efficiency", type="number", value=60, step=1, min=60, max=100)]),
+                        ]),
+                    dbc.Row([
+                        dbc.Col([html.P("Volume Flow",className="card-text")]),
+                        ]),
+                    dbc.Row([
+                        dbc.Col([dcc.Input(id="out-Q-A-Vol", type="number", value = 0)]),
+                        dbc.Col([dcc.Dropdown(id='out-Q-A-Vol-units', options=[{'label': unit, "value": unit} for unit in ["ACFM","ACM/h"]],
+                                      value="ACFM", clearable=False, style={"color": "#000000"})]),
+                        ])
+
                 ]
             )
         )
@@ -158,9 +214,9 @@ out_graph_Card = dbc.Card(
 
 cards = html.Div([
      dbc.Row([
-         dbc.Col(Amb_Inl_Card, width = 2),
-         dbc.Col(image_Card, width = 8),
-         dbc.Col(Out_Card, width = 2),
+         dbc.Col(Amb_Inl_Card, width = 3),
+         dbc.Col(image_Card, width = 6),
+         dbc.Col(Out_Card, width = 3),
          ]),
      dbc.Row([
          dbc.Col(inl_graph_Card, width = 6),
@@ -172,7 +228,16 @@ cards = html.Div([
 app.layout = html.Div(cards)
 
 
+def f_K(temp_f):
+    return (temp_f-32)*(5/9)+273.15
 
+def calc_EL_frm_press(press, temp):
+    EL = ((((14.7/press)**(1/5.257)-1)*(temp))/0.0065)
+    return EL
+
+def calc_press_frm_EL(EL, temp):
+    press = 14.7*math.e**((-g*M*(EL-0)/(R_s*temp)))
+    return press
 
 def calc_acfm(scfm,dnsty):
     lbmin = 0.0751294*scfm
@@ -313,7 +378,23 @@ def gen_inl_graph(amb_temp, inl_p, amb_p, dia):
     fig = generate_plot(dia, inl_fld_dnsty)
     return fig
     
-    
+   
+@app.callback([Output(component_id='ambient-pressure', component_property='value'),
+               Output(component_id='ambient-pressure-EL', component_property='value')],
+               [Input(component_id='ambient-pressure', component_property='value'),
+                Input(component_id='ambient-pressure-EL', component_property='value'),
+                Input(component_id='ambient-temp', component_property='value')],
+               prevent_initial_call=False)
+def update_pressure(press, EL, temp):
+    ctx = dash.callback_context
+    trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    if trigger_id == "ambient-pressure-EL" or trigger_id == "ambient-temp":
+        press = round(calc_press_frm_EL(EL, f_K(temp)),2)
+        EL = EL
+    elif trigger_id == "ambient-pressure" or trigger_id == "ambient-temp":
+        press = press
+        EL = round(calc_EL_frm_press(press, f_K(temp)))
+    return press, EL
     
 @app.callback(Output(component_id='out-my-vel_graph', component_property='figure'),
                [Input(component_id='ambient-temp', component_property='value'),
